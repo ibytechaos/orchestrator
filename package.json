@@ -10,6 +10,7 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "claude-flow": "^2.5.0-alpha.141"
+    "claude-flow": "2.5.0-alpha.139",
+    "cli-progress": "^3.12.0"
   }
 }

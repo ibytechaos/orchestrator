@@ -1,8 +1,5 @@
 [cli]
-preload = [
-  "./bun-shims/register-better-sqlite3.js",
-  "./bun-shims/claude-flow-plugin.js"
-]
+preload = ["./bun-shims/register-better-sqlite3.js"]
 
 [alias]
 "better-sqlite3" = "./bun-shims/better-sqlite3.js"
