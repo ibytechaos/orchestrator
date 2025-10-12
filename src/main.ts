@@ -41,8 +41,8 @@ function resolveClaudeFlowRoot(): string {
 
   const candidates: string[] = [];
 
-  if (process.env.CLAUDE_FLOW_ROOT) {
-    candidates.push(process.env.CLAUDE_FLOW_ROOT);
+  if (process.env.NODE_MODULES_DIR) {
+    candidates.push(process.env.NODE_MODULES_DIR+'/claude-flow');
   }
 
   candidates.push(path.resolve(__dirname, '../node_modules/claude-flow'));
