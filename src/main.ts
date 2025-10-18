@@ -7,6 +7,7 @@ import { createRequire } from 'node:module';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const NODE_MODULES_DIR = process.env.NODE_MODULES_DIR?.trim() || null;
 
 // Embedded shim sources ensure bun compile binaries can recreate the patch payload.
 const BETTER_SQLITE3_PACKAGE_JSON = '{\n  "name": "better-sqlite3",\n  "version": "0.0.0-bun-shim",\n  "main": "index.js"\n}\n';
@@ -41,8 +42,8 @@ function resolveClaudeFlowRoot(): string {
 
   const candidates: string[] = [];
 
-  if (process.env.NODE_MODULES_DIR) {
-    candidates.push(process.env.NODE_MODULES_DIR+'/claude-flow');
+  if (NODE_MODULES_DIR) {
+    candidates.push(path.join(NODE_MODULES_DIR, 'claude-flow'));
   }
 
   candidates.push(path.resolve(__dirname, '../node_modules/claude-flow'));
@@ -102,8 +103,7 @@ function patchClaudeFlow(root: string): void {
   }
 }
 
-function ensureBetterSqlite3Shim(root: string, packageName: string): void {
-  const targetDir = path.join(root, 'node_modules', 'better-sqlite3');
+function installBetterSqlite3Shim(targetDir: string, label: string): void {
   const indexPath = path.join(targetDir, 'index.js');
   const packageJsonPath = path.join(targetDir, 'package.json');
 
@@ -124,13 +124,13 @@ function ensureBetterSqlite3Shim(root: string, packageName: string): void {
   }
 
   if (updated) {
-    const relative = path.relative(root, targetDir) || '.';
-    console.log(`[claude-flow:bun] Installed better-sqlite3 shim for ${packageName} at ${relative}`);
+    const displayPath = path.isAbsolute(targetDir) ? path.relative(process.cwd(), targetDir) : targetDir;
+    console.log(`[claude-flow:bun] Installed better-sqlite3 shim for ${label} at ${displayPath || '.'}`);
   }
 }
 
 const claudeFlowRoot = resolveClaudeFlowRoot();
-ensureBetterSqlite3Shim(claudeFlowRoot, 'claude-flow');
+installBetterSqlite3Shim(path.join(claudeFlowRoot, 'node_modules', 'better-sqlite3'), 'claude-flow');
 patchClaudeFlow(claudeFlowRoot);
 
 function resolveSiblingPackage(baseRoot: string, packageName: string): string | null {
@@ -161,11 +161,22 @@ for (const packageName of siblingPackages) {
       root = localCandidate;
     }
   }
+  if (!root && NODE_MODULES_DIR) {
+    const envCandidate = path.join(NODE_MODULES_DIR, packageName);
+    if (existsSync(path.join(envCandidate, 'package.json'))) {
+      root = envCandidate;
+    }
+  }
   if (root) {
-    ensureBetterSqlite3Shim(root, packageName);
+    installBetterSqlite3Shim(path.join(root, 'node_modules', 'better-sqlite3'), packageName);
   } else {
     console.warn(`[claude-flow:bun] Could not locate ${packageName}; skipping shim installation.`);
   }
+}
+
+if (NODE_MODULES_DIR) {
+  const globalBetterSqlite3Dir = path.join(NODE_MODULES_DIR, 'better-sqlite3');
+  installBetterSqlite3Shim(globalBetterSqlite3Dir, 'NODE_MODULES_DIR');
 }
 
 try {
